@@ -1,0 +1,3 @@
+$SEMANTIC_OUTPUT = (打开|关闭)空调;
+
+( \<s\> ($SEMANTIC_OUTPUT) \<\/s\> )
