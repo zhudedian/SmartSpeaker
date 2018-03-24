@@ -136,18 +136,33 @@ public class JsonAnalyze {
                 case "netfm":
                     JSONObject netfmDataObject = jsonObject.getJSONObject("result").getJSONObject("sds").getJSONObject("data");
                     String slotcount = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getString("slotcount");
+                    String domain = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getString("domain");
                     Log.i("edong","slotcount="+slotcount);
-                    if (slotcount.equals("3")){
-                        NetFM3Bean netFM3Bean = new Gson().fromJson(jsonObject.toString(),NetFM3Bean.class);
-                        List<NetFM3Bean.ResultBean.SdsBean.DataBean.DbdataBean> netfm3List = netFM3Bean.getResult().getSds().getData().getDbdata();
+                    if (slotcount.equals("3")&&!domain.equals("故事")){
+                        Log.i("edong","slotcount.equals="+slotcount);
+
+                        NetFM3Bean netFM3Bean = null;
+                        List<NetFM3Bean.ResultBean.SdsBean.DataBean.DbdataBean> netfm3List = null;
+                        try {
+                            Log.i("edong","slotcount.equals1="+slotcount);
+                            netFM3Bean = new Gson().fromJson(jsonObject.toString(),NetFM3Bean.class);
+                            Log.i("edong","slotcount.equals2="+slotcount);
+                            netfm3List = netFM3Bean.getResult().getSds().getData().getDbdata();
+                            Log.i("edong","slotcount.equals3="+slotcount);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
                         if (netfm3List == null || netfm3List.size() == 0) {
+                            Log.i("edong","netfm3List.size()="+netfm3List.size());
                             tts = "我还没有找到这个，试试听点别的吧";
                             resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                         } else {
+                            Log.i("edong","else,netfm3List.size()="+netfm3List.size());
                             tts = netfm3List.get(0).getRadio_name();
                             resultBean = new ResultBean(tts, ResultBean.PlayType.NETFM3, netfm3List, 0);
+                            break;
                         }
-                        break;
+
                     }
                     Gson netfmGson = new Gson();
                     List<NetFMBean.DbdataBean> netfmList = netfmGson.fromJson(netfmDataObject.toString(), NetFMBean.class).getDbdata();
