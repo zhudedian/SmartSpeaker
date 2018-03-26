@@ -144,7 +144,7 @@ public class EngineSpeech {
         mAILocalSignalAndWakeupEngine.setResBin("aihome_comm_xiaole_20160331_boundary.bin");
         // 设置唤醒配置文件
         mAILocalSignalAndWakeupEngine.setWakeupCfg("UCA_wakeup_ch6-2-ch6_72mm_common_20170725_v3.0.12.bin");
-        mAILocalSignalAndWakeupEngine.setSaveAudioFilePath("/mnt/internal_sd/");
+        //mAILocalSignalAndWakeupEngine.setSaveAudioFilePath("/mnt/internal_sd/");
         // 设置 自己 feed 数据
         mAILocalSignalAndWakeupEngine.setUseCustomFeed(true);
 
@@ -373,5 +373,13 @@ public class EngineSpeech {
         mAILocalGrammarEngine.update();
     }
 
+    public void ttsSpeak(String tts){
+
+        // 暂停播放 唤醒时取消当前正在 TTS / ASR
+        MediaUtil.play(context, ResultBean.PlayType.PAUSE, null, 0);
+        mAILocalTtsEngine.stop();
+        mAIMixASREngine.cancel();
+        mAILocalTtsEngine.speak(tts,"1024");
+    }
 
 }

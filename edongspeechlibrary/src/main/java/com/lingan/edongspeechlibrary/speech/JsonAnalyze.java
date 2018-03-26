@@ -1,6 +1,9 @@
 package com.lingan.edongspeechlibrary.speech;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 import com.aispeech.AIResult;
@@ -12,6 +15,7 @@ import com.lingan.edongspeechlibrary.bean.NetFM3Bean;
 import com.lingan.edongspeechlibrary.bean.NetFMBean;
 import com.lingan.edongspeechlibrary.bean.NewsBean;
 import com.lingan.edongspeechlibrary.bean.ResultBean;
+import com.lingan.edongspeechlibrary.db.AlarEvent;
 import com.lingan.edongspeechlibrary.media.MediaUtil;
 import com.lingan.edongspeechlibrary.media.VolumeControl;
 import com.lingan.edongspeechlibrary.utils.Constant;
@@ -20,7 +24,10 @@ import com.lingan.edongspeechlibrary.utils.FileUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
@@ -70,27 +77,37 @@ public class JsonAnalyze {
                     break;
 
                 case "reminder":
-                    tts = Constant.DOMAIN_IN_PROCESSING;
-                    resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                    resultBean = getReminderResult(jsonObject, context);
                     break;
                 case "chat":
-                    JSONObject paramObject = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getJSONObject("param");
-                    if (paramObject.has("操作")&&paramObject.has("对象")){
-                        String operation = paramObject.getString("操作");
-                        String obj = paramObject.getString("对象");
-                        if ((operation.equals("收听")||operation.equals("说"))&&obj.equals("笑话")){
-                            String urlStr = jsonObject.getJSONObject("result").getJSONObject("sds").getJSONObject("data").getJSONArray("dbdata").get(0).toString();
-                            JSONObject urlObject = new JSONObject(urlStr);
-                            String url = urlObject.getString("url");
-                            Log.i("edong","url="+url);
-                            MediaUtil.sayJoke(url);
-                            tts = "";
+                    JSONObject paramObject;
+                    JSONObject resultObject = jsonObject.getJSONObject("result");
+                    if (resultObject.has("semantics")) {
+                        paramObject = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getJSONObject("param");
+                        Log.d("edong", "chat2:");
+                        if (paramObject.has("操作") && paramObject.has("对象")) {
+                            String operation = paramObject.getString("操作");
+                            String obj = paramObject.getString("对象");
+                            if ((operation.equals("收听") || operation.equals("说")) && obj.equals("笑话")) {
+                                String urlStr = jsonObject.getJSONObject("result").getJSONObject("sds").getJSONObject("data").getJSONArray("dbdata").get(0).toString();
+                                JSONObject urlObject = new JSONObject(urlStr);
+                                String url = urlObject.getString("url");
+                                //Log.i("edong", "url=" + url);
+                                MediaUtil.sayJoke(url);
+                                tts = "";
+                            } else {
+                                tts = "请再说一遍";
+                            }
+                        }
+                    }else {
+                        JSONObject outputObject = jsonObject.getJSONObject("result").getJSONObject("sds").getJSONObject("log").getJSONObject("output");
+                        if (outputObject.has("nlg")){
+                            tts = outputObject.getString("nlg");
                         }else {
                             tts = "请再说一遍";
                         }
-                    }else {
-                        tts = "请再说一遍";
                     }
+                    //Log.d("edong", "tts:" + tts);
                     resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                     break;
                 // 音乐播放
@@ -110,8 +127,22 @@ public class JsonAnalyze {
                             resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                             break;
                         }else if (tgt.equals("歌曲名")) {
-                            tts = MediaUtil.getPlayingMusicName();
+                            tts = "正在播放的是"+MediaUtil.getPlayingName();
                             Log.i("edong", "tts" + tts);
+                            resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                            break;
+                        }
+                    }else if (paramObject.has("重复次数")){
+                        String timesStr = paramObject.getString("重复次数");
+                        MediaUtil.singleTimes = Integer.parseInt(timesStr);
+                        MediaUtil.removeSinglePlay();
+                        tts = "已设定重复播放"+MediaUtil.singleTimes+"次";
+                        resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                        break;
+                    }else if (paramObject.has("功能类型")){
+                        String function = paramObject.getString("功能类型");
+                        if (function.equals("新手引导")) {
+                            tts = "这个问题很简单，您只需要跟我说播放音乐，或者跟我说具体播放什么音乐就可以了，赶快试试吧";
                             resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                             break;
                         }
@@ -137,27 +168,40 @@ public class JsonAnalyze {
                     JSONObject netfmDataObject = jsonObject.getJSONObject("result").getJSONObject("sds").getJSONObject("data");
                     String slotcount = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getString("slotcount");
                     String domain = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getString("domain");
+                    paramObject = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getJSONObject("param");
                     Log.i("edong","slotcount="+slotcount);
+                    if (!paramObject.has("故事名")&&!paramObject.has("keyword")&&
+                            paramObject.has("操作")&&paramObject.has("对象")){
+                        tts = "请说您要收听的内容";
+                        resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                        break;
+                    }else if (paramObject.has("__tgt__")&&paramObject.has("对象")){
+                        String tgt = paramObject.getString("__tgt__");
+                        String obj = paramObject.getString("对象");
+                        if (tgt.equals("故事名")&&obj.equals("故事")){
+                            if (MediaUtil.getPlayingName().equals("")){
+                                tts = "当前没有播放的故事";
+                                resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                            }else {
+                                tts = "当前正在播放的故事是"+MediaUtil.getPlayingName();
+                                resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                            }
+                            break;
+                        }
+                    }
                     if (slotcount.equals("3")&&!domain.equals("故事")){
-                        Log.i("edong","slotcount.equals="+slotcount);
-
                         NetFM3Bean netFM3Bean = null;
                         List<NetFM3Bean.ResultBean.SdsBean.DataBean.DbdataBean> netfm3List = null;
                         try {
-                            Log.i("edong","slotcount.equals1="+slotcount);
                             netFM3Bean = new Gson().fromJson(jsonObject.toString(),NetFM3Bean.class);
-                            Log.i("edong","slotcount.equals2="+slotcount);
                             netfm3List = netFM3Bean.getResult().getSds().getData().getDbdata();
-                            Log.i("edong","slotcount.equals3="+slotcount);
                         }catch (Exception e){
                             e.printStackTrace();
                         }
                         if (netfm3List == null || netfm3List.size() == 0) {
-                            Log.i("edong","netfm3List.size()="+netfm3List.size());
                             tts = "我还没有找到这个，试试听点别的吧";
                             resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                         } else {
-                            Log.i("edong","else,netfm3List.size()="+netfm3List.size());
                             tts = netfm3List.get(0).getRadio_name();
                             resultBean = new ResultBean(tts, ResultBean.PlayType.NETFM3, netfm3List, 0);
                             break;
@@ -191,7 +235,6 @@ public class JsonAnalyze {
                     // 命令  家电控制、播放控制
                     resultBean = getCommondResult(jsonObject, context);
                     break;
-
                 default:
                     resultBean = new ResultBean(Constant.DEFAULT_TTS, ResultBean.PlayType.NO, null, 0);
                     break;
@@ -214,18 +257,34 @@ public class JsonAnalyze {
 
         ResultBean resultBean = null;
         String tts;
-
+        Log.i("edong", "tts1");
         JSONObject sdsObject = jsonObject.getJSONObject("result").getJSONObject("sds");
+        JSONObject semanticsObject = jsonObject.getJSONObject("result").getJSONObject("semantics");
         JSONObject paramObject = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getJSONObject("param");
-        if (paramObject.has("__tgt__")){
-            String tgt = paramObject.getString("__tgt__");
+        JSONObject nbestparamObject = null ;
+        if (semanticsObject.has("nbest")){
+            nbestparamObject = ((JSONObject) jsonObject.getJSONObject("result").getJSONObject("semantics")
+                    .getJSONArray("nbest").get(0)).getJSONObject("request").getJSONObject("param");
+        }
+        if (paramObject.has("__tgt__")||(nbestparamObject!=null&&nbestparamObject.has("__tgt__"))){
+            String tgt = "";
+            if (paramObject.has("__tgt__")){
+                tgt = paramObject.getString("__tgt__");
+            }else if (nbestparamObject!=null){
+                tgt = nbestparamObject.getString("__tgt__");
+            }
             if (tgt.equals("歌手名")) {
                 tts = MediaUtil.getPlayingMusicArtist();
                 Log.i("edong", "tts" + tts);
                 resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                 return resultBean;
             }else if (tgt.equals("歌曲名")) {
-                tts = MediaUtil.getPlayingMusicName();
+                tts = "正在播放的是"+MediaUtil.getPlayingName();
+                Log.i("edong", "tts" + tts);
+                resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                return resultBean;
+            }else if (tgt.equals("播放内容")) {
+                tts = "现在播放的是"+MediaUtil.getPlayingName();
                 Log.i("edong", "tts" + tts);
                 resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                 return resultBean;
@@ -316,8 +375,22 @@ public class JsonAnalyze {
                 int position = 0;
                 try {
                     String posStr = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getJSONObject("param").getString("进度");
-                    String[] times = posStr.replace("+", "").split(":");
-                    position = Integer.parseInt(times[0]) * 60 * 60 + Integer.parseInt(times[1]) * 60 + Integer.parseInt(times[2]);
+                    if(posStr.equals("+")){
+                        position = 30;
+                    }else if (posStr.equals("-")){
+                        position = -30;
+                    }else {
+                        String[] times = {};
+                        if (posStr.contains("+")){
+                            times = posStr.replace("+", "").split(":");
+                            position = Integer.parseInt(times[0]) * 60 * 60 + Integer.parseInt(times[1]) * 60 + Integer.parseInt(times[2]);
+                        }else if (posStr.contains("-")){
+                            times = posStr.replace("-", "").split(":");
+                            position = Integer.parseInt(times[0]) * 60 * 60 + Integer.parseInt(times[1]) * 60 + Integer.parseInt(times[2]);
+                            position*=-1;
+                        }
+
+                    }
                     Log.i("edong","position"+position);
                 }catch (Exception e){
                     e.printStackTrace();
@@ -340,5 +413,48 @@ public class JsonAnalyze {
         return resultBean;
 
     }
+    // reminder
+    private static ResultBean getReminderResult(JSONObject jsonObject, Context context) throws JSONException {
+        // add for linggan
+        SpeechCommand.dispatchJson(jsonObject);
+        ResultBean resultBean = null;
+        String tts;
 
+        JSONObject paramObject = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getJSONObject("param");
+        String event = paramObject.getString("事件");
+        String timeStr = paramObject.getString("时间");
+        SimpleDateFormat formatter = new SimpleDateFormat ("HH:mm:ss");
+        SimpleDateFormat format2= new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");
+        Date date = null;
+        try {
+            date = formatter.parse(timeStr);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        Date curDate = new Date(System.currentTimeMillis());
+        String curTime = format2.format(curDate);
+        String notTimeStr = curTime.split(" ")[0]+" "+timeStr;
+        try {
+            date = format2.parse(notTimeStr);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        String time = format2.format(date);
+        Log.d("edong", "time:" + time);
+        //时间一到，发送广播（闹钟响了）  
+        Intent intent=new Intent();
+        intent.putExtra("event",event);
+        intent.setAction("com.edong.alarmandnotice.RING");
+        //将来时态的跳转  
+        PendingIntent pendingIntent=PendingIntent.getBroadcast(context,0x101,intent,0);
+        //设置闹钟 
+        AlarmManager alarmManager = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+        alarmManager.set(AlarmManager.RTC_WAKEUP,date.getTime(),pendingIntent);
+        AlarEvent alarEvent = new AlarEvent(date.getTime(),time,event);
+        alarEvent.save();
+        tts = "已设置"+time+"的提醒";
+        resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+
+        return resultBean;
+    }
 }

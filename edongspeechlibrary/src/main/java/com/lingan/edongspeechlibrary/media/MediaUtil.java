@@ -24,7 +24,9 @@ import java.util.List;
 public class MediaUtil {
 
     private static MediaPlayer mediaPlayer;
+    private static String playName = "";
     private static boolean isSinglePlay = false;
+    public static int singleTimes = 0;
     private static List resList;
     public static int fastMills = 0;
     /**
@@ -157,6 +159,12 @@ public class MediaUtil {
         return name;
     }
     /**
+     * 获取播放曲目名
+     */
+    public static String getPlayingName(){
+        return playName;
+    }
+    /**
      * 播放 url
      */
     private static void playRemoteUrl(final ResultBean.PlayType playType, final List resList, final int position) {
@@ -168,12 +176,16 @@ public class MediaUtil {
         String url = "";
         if (playType == ResultBean.PlayType.MUSIC) {
             url = ((MusicBean.DbdataBean) resList.get(position)).getUrl();
+            playName = ((MusicBean.DbdataBean)resList.get(position)).getTitle();
         } else if (playType == ResultBean.PlayType.NETFM) {
             url = ((NetFMBean.DbdataBean) resList.get(position)).getPlayUrl32();
+            playName = ((NetFMBean.DbdataBean)resList.get(position)).getTrack();
         } else if (playType == ResultBean.PlayType.NETFM3) {
             url = ((NetFM3Bean.ResultBean.SdsBean.DataBean.DbdataBean) resList.get(position)).getRate64_aac_url();
+            playName = ((NetFM3Bean.ResultBean.SdsBean.DataBean.DbdataBean)resList.get(position)).getRadio_name();
         }else if (playType == ResultBean.PlayType.NEWS) {
             url = ((NewsBean.DbdataBean) resList.get(position)).getMp3PlayUrl32();
+            playName = ((NewsBean.DbdataBean)resList.get(position)).getAudioName();
         }
 
         // 如果正在播放其他提示音 先停掉
@@ -201,12 +213,13 @@ public class MediaUtil {
                 // 播放下一首
                 String next_url = "";
                 if (playType == ResultBean.PlayType.MUSIC) {
-                    if (isSinglePlay){
+                    if (isSinglePlay||(--singleTimes)>0){
                         next_url = ((MusicBean.DbdataBean) resList.get(Constant.musicPlayPosition)).getUrl();
                     }else {
                         if (Constant.musicPlayPosition == resList.size() - 1)
                             Constant.musicPlayPosition = -1;
                         next_url = ((MusicBean.DbdataBean) resList.get(++Constant.musicPlayPosition)).getUrl();
+                        playName = ((MusicBean.DbdataBean)resList.get(Constant.musicPlayPosition)).getTitle();
                     }
                 }
                 if (!next_url.isEmpty()) {

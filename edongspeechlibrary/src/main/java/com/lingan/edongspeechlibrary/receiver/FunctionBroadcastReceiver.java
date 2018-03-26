@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.provider.MediaStore;
+import android.util.Log;
 
 
 import com.lingan.edongspeechlibrary.R;

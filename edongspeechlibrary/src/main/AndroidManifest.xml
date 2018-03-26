@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.lingan.edongspeechlibrary" >
+    package="com.lingan.edongspeechlibrary">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -14,10 +15,19 @@
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
-        android:name=".SpeechApplication"
-        android:enabled="true" >
+        android:name="com.lingan.edongspeechlibrary.SpeechApplication"
+        android:enabled="true">
+        <receiver
+            android:name=".receiver.AlarReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.edong.alarmandnotice.RING"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
