@@ -4,6 +4,8 @@ import android.app.Application;
 
 import com.aispeech.common.AIConstant;
 
+import org.litepal.LitePalApplication;
+
 /**
  * Created by dyx on 2017/12/13.
  * Application 对思必驰的一些配置初始化
@@ -18,5 +20,6 @@ public class SpeechApplication extends Application {
         //AIConstant.setAudioRecorderType(AIConstant.TYPE_CPLD);   //使用CPLD
         // AIConstant.setAudioRecorderType(AIConstant.TYPE_COMMON_CIRCLE);  //环形麦
         AIConstant.setAudioRecorderType(AIConstant.TYPE_SPI); //设置使用spi方式接收音频数据
+        LitePalApplication.initialize(getApplicationContext());
     }
 }

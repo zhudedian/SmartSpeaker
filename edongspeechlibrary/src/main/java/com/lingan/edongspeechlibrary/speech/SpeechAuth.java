@@ -1,6 +1,7 @@
 package com.lingan.edongspeechlibrary.speech;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.aispeech.export.listeners.AIAuthListener;
 import com.aispeech.speech.AIAuthEngine;
@@ -33,6 +34,7 @@ public class SpeechAuth {
             public void onAuthSuccess() {
                 // 授权成功
                 // 初始化引擎
+                Log.i("edong","onAuthSuccess");
                 EngineSpeech.getInstance(context).initTtsGrammarEngine();
 
             }
@@ -40,13 +42,14 @@ public class SpeechAuth {
             @Override
             public void onAuthFailed(String s) {
                 // 授权失败
-
+                Log.i("edong","onAuthFailed,"+s);
             }
         });
 
         if(mAIAuthEngine.isAuthed()){
             // 已授权
             // 初始化引擎
+            Log.i("edong","mAIAuthEngine.isAuthed()");
             EngineSpeech.getInstance(context).initTtsGrammarEngine();
 
         }else{

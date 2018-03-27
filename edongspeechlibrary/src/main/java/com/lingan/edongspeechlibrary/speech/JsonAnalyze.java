@@ -4,6 +4,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.aispeech.AIResult;
@@ -18,6 +19,7 @@ import com.lingan.edongspeechlibrary.bean.ResultBean;
 import com.lingan.edongspeechlibrary.db.AlarEvent;
 import com.lingan.edongspeechlibrary.media.MediaUtil;
 import com.lingan.edongspeechlibrary.media.VolumeControl;
+import com.lingan.edongspeechlibrary.utils.AlarUtil;
 import com.lingan.edongspeechlibrary.utils.Constant;
 import com.lingan.edongspeechlibrary.utils.FileUtil;
 
@@ -420,39 +422,63 @@ public class JsonAnalyze {
         ResultBean resultBean = null;
         String tts;
 
+        String timeSpan = "";
+        String timeStr = "";
+        String dateStr = "";
         JSONObject paramObject = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getJSONObject("param");
+        if (paramObject.has("时间间隔")){
+            timeSpan = paramObject.getString("时间间隔");
+        }
+        if (paramObject.has("时间")){
+            timeStr = paramObject.getString("时间");
+        }
+        if (paramObject.has("日期")){
+            dateStr = paramObject.getString("日期");
+        }
+        Log.d("edong", "timeSpan:" + timeSpan+",timeStr:" + timeStr+",dateStr:" + dateStr);
         String event = paramObject.getString("事件");
-        String timeStr = paramObject.getString("时间");
+
         SimpleDateFormat formatter = new SimpleDateFormat ("HH:mm:ss");
         SimpleDateFormat format2= new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");
+        SimpleDateFormat format3= new SimpleDateFormat("yyyyMMdd HH:mm:ss");
         Date date = null;
-        try {
-            date = formatter.parse(timeStr);
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
         Date curDate = new Date(System.currentTimeMillis());
         String curTime = format2.format(curDate);
-        String notTimeStr = curTime.split(" ")[0]+" "+timeStr;
+        String notTimeStr = "";
         try {
-            date = format2.parse(notTimeStr);
+            if (!timeStr.equals("")&&dateStr.equals("")){
+                notTimeStr = curTime.split(" ")[0]+" "+timeStr;
+                date = format2.parse(notTimeStr);
+            }else if (timeStr.equals("")&&!dateStr.equals("")){
+                notTimeStr = dateStr+" "+curTime.split(" ")[1];
+                date = format3.parse(notTimeStr);
+            }else if (!timeStr.equals("")&&!dateStr.equals("")){
+                notTimeStr = dateStr+" "+timeStr;
+                date = format3.parse(notTimeStr);
+            }
+            Log.d("edong", "notTimeStr:" + notTimeStr);
         } catch (ParseException e) {
             e.printStackTrace();
+            Log.d("edong", "e:" + e.toString());
         }
         String time = format2.format(date);
         Log.d("edong", "time:" + time);
-        //时间一到，发送广播（闹钟响了）  
-        Intent intent=new Intent();
-        intent.putExtra("event",event);
-        intent.setAction("com.edong.alarmandnotice.RING");
-        //将来时态的跳转  
-        PendingIntent pendingIntent=PendingIntent.getBroadcast(context,0x101,intent,0);
-        //设置闹钟 
-        AlarmManager alarmManager = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
-        alarmManager.set(AlarmManager.RTC_WAKEUP,date.getTime(),pendingIntent);
+
         AlarEvent alarEvent = new AlarEvent(date.getTime(),time,event);
         alarEvent.save();
-        tts = "已设置"+time+"的提醒";
+
+        SharedPreferences preferences = context.getSharedPreferences("speech_prefers", Context.MODE_PRIVATE);
+        if (!preferences.getBoolean("data_save_alarevent",false)) {
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("data_save_alarevent", true);
+            editor.apply();
+        }
+        AlarUtil.setAlar(context,alarEvent);
+        if (timeSpan.equals("")) {
+            tts = "已设置" + time + event+"的提醒";
+        }else {
+            tts = "已设置" + timeSpan+"后" + event+"的提醒";
+        }
         resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
 
         return resultBean;
