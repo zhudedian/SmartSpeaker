@@ -292,6 +292,23 @@ public class JsonAnalyze {
                 return resultBean;
             }
         }
+        Log.i("edong", "tts2");
+        if(paramObject.has("操作")&&paramObject.has("对象")){
+            Log.i("edong", "tts3");
+            String op = paramObject.getString("操作");
+            String ob = paramObject.getString("对象");
+            Log.i("edong", "tts4");
+            if (op.equals("取消")&&ob.equals("日程")){
+                if (AlarUtil.getAlarEventCount(context)==0){
+                    tts = "您还没有设置日程提醒呢";
+                }else {
+                    tts = "您一共设置了" + AlarUtil.getAlarEventCount(context) + "个日程提醒，已经帮您取消了";
+                    AlarUtil.removeAlar(context);
+                }
+                resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                return resultBean;
+            }
+        }
         if (sdsObject.has("dev_name")) {
             // 设备控制
             tts = Constant.COMMAND_OK;
@@ -419,68 +436,6 @@ public class JsonAnalyze {
     private static ResultBean getReminderResult(JSONObject jsonObject, Context context) throws JSONException {
         // add for linggan
         SpeechCommand.dispatchJson(jsonObject);
-        ResultBean resultBean = null;
-        String tts;
-
-        String timeSpan = "";
-        String timeStr = "";
-        String dateStr = "";
-        JSONObject paramObject = jsonObject.getJSONObject("result").getJSONObject("semantics").getJSONObject("request").getJSONObject("param");
-        if (paramObject.has("时间间隔")){
-            timeSpan = paramObject.getString("时间间隔");
-        }
-        if (paramObject.has("时间")){
-            timeStr = paramObject.getString("时间");
-        }
-        if (paramObject.has("日期")){
-            dateStr = paramObject.getString("日期");
-        }
-        Log.d("edong", "timeSpan:" + timeSpan+",timeStr:" + timeStr+",dateStr:" + dateStr);
-        String event = paramObject.getString("事件");
-
-        SimpleDateFormat formatter = new SimpleDateFormat ("HH:mm:ss");
-        SimpleDateFormat format2= new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");
-        SimpleDateFormat format3= new SimpleDateFormat("yyyyMMdd HH:mm:ss");
-        Date date = null;
-        Date curDate = new Date(System.currentTimeMillis());
-        String curTime = format2.format(curDate);
-        String notTimeStr = "";
-        try {
-            if (!timeStr.equals("")&&dateStr.equals("")){
-                notTimeStr = curTime.split(" ")[0]+" "+timeStr;
-                date = format2.parse(notTimeStr);
-            }else if (timeStr.equals("")&&!dateStr.equals("")){
-                notTimeStr = dateStr+" "+curTime.split(" ")[1];
-                date = format3.parse(notTimeStr);
-            }else if (!timeStr.equals("")&&!dateStr.equals("")){
-                notTimeStr = dateStr+" "+timeStr;
-                date = format3.parse(notTimeStr);
-            }
-            Log.d("edong", "notTimeStr:" + notTimeStr);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            Log.d("edong", "e:" + e.toString());
-        }
-        String time = format2.format(date);
-        Log.d("edong", "time:" + time);
-
-        AlarEvent alarEvent = new AlarEvent(date.getTime(),time,event);
-        alarEvent.save();
-
-        SharedPreferences preferences = context.getSharedPreferences("speech_prefers", Context.MODE_PRIVATE);
-        if (!preferences.getBoolean("data_save_alarevent",false)) {
-            SharedPreferences.Editor editor = preferences.edit();
-            editor.putBoolean("data_save_alarevent", true);
-            editor.apply();
-        }
-        AlarUtil.setAlar(context,alarEvent);
-        if (timeSpan.equals("")) {
-            tts = "已设置" + time + event+"的提醒";
-        }else {
-            tts = "已设置" + timeSpan+"后" + event+"的提醒";
-        }
-        resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
-
-        return resultBean;
+        return AlarUtil.getResultBean(jsonObject,context);
     }
 }

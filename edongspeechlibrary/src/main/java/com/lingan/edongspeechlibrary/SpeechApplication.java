@@ -1,6 +1,7 @@
 package com.lingan.edongspeechlibrary;
 
 import android.app.Application;
+import android.content.Context;
 
 import com.aispeech.common.AIConstant;
 
@@ -13,6 +14,7 @@ import org.litepal.LitePalApplication;
 
 public class SpeechApplication extends Application {
 
+    private static Context context;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -20,6 +22,12 @@ public class SpeechApplication extends Application {
         //AIConstant.setAudioRecorderType(AIConstant.TYPE_CPLD);   //使用CPLD
         // AIConstant.setAudioRecorderType(AIConstant.TYPE_COMMON_CIRCLE);  //环形麦
         AIConstant.setAudioRecorderType(AIConstant.TYPE_SPI); //设置使用spi方式接收音频数据
+        if (context==null){
+            context = getApplicationContext();
+        }
         LitePalApplication.initialize(getApplicationContext());
+    }
+    public static Context getContext(){
+        return context;
     }
 }

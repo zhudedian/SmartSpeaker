@@ -31,7 +31,7 @@
 
 -keep public class com.lingan.edongspeechlibrary.SpeechSpeaker { *; }
 
-
+-keep public class com.lingan.edongspeechlibrary.SpeechApplication { *; }
 
 
 
@@ -44,6 +44,9 @@
 -keep class com.aispeech.**{*;}
 
 -keep class com.google.gson.**{*;}
+
+-keep class org.litepal.**{*;}
+-keep class * extends org.litepal.crud.DataSupport { *; }
 ##---------------Begin: proguard configuration for Gson  ----------
 # Gson uses generic type information stored in a class file when working with fields. Proguard
 # removes such information by default, so configure it to keep all of it.

@@ -15,19 +15,17 @@
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
-        android:name="com.lingan.edongspeechlibrary.SpeechApplication"
+        android:name=".SpeechApplication"
         android:enabled="true">
-        <receiver
-            android:name=".receiver.AlarReceiver"
+
+
+        <service
+            android:name=".service.AlarService"
             android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.edong.alarmandnotice.RING"/>
-            </intent-filter>
-        </receiver>
+            android:exported="true"></service>
     </application>
 
 </manifest>

@@ -1,13 +1,16 @@
 package com.lingan.edongspeechlibrary;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 
 import com.lingan.edongspeechlibrary.bean.ResultBean;
 import com.lingan.edongspeechlibrary.led.LedControl;
 import com.lingan.edongspeechlibrary.media.MediaUtil;
+import com.lingan.edongspeechlibrary.receiver.AlarReceiver;
 import com.lingan.edongspeechlibrary.receiver.FunctionBroadcastReceiver;
 import com.lingan.edongspeechlibrary.speech.SpeechAuth;
+import com.lingan.edongspeechlibrary.utils.AlarUtil;
 import com.lingan.edongspeechlibrary.utils.WifiUtil;
 
 import java.util.ArrayList;
@@ -26,10 +29,12 @@ public class SpeechSpeaker {
     public static void init(Context context) {
 
         final Context mContext = context.getApplicationContext();
-
+        AlarUtil.initAlar(mContext);
 
         // 按键监听
         FunctionBroadcastReceiver functionBroadcastReceiver = new FunctionBroadcastReceiver();
+        AlarReceiver alarReceiver = new AlarReceiver();
+
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction("com.edong.mute");
         intentFilter.addAction("com.edong.pause");
@@ -41,7 +46,10 @@ public class SpeechSpeaker {
 
         mContext.registerReceiver(functionBroadcastReceiver,intentFilter);
 
-
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_TIME_TICK);
+        intentFilter.addAction("com.edong.alarmandnotice.RING");
+        mContext.registerReceiver(alarReceiver,intentFilter);
         // APP 启动完成，检测 wifi是否已经连接了,并对用户进行语音提示
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
