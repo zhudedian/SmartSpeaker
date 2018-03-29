@@ -1,10 +1,13 @@
 package com.lingan.edongspeechlibrary.speech;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.aispeech.AIError;
 import com.aispeech.AIResult;
+import com.aispeech.IMergeRule;
 import com.aispeech.common.AIConstant;
+import com.aispeech.common.JSONResultParser;
 import com.aispeech.common.Util;
 import com.aispeech.export.engines.AILocalGrammarEngine;
 import com.aispeech.export.engines.AILocalSignalAndWakeupEngine;
@@ -22,6 +25,8 @@ import com.lingan.edongspeechlibrary.utils.Constant;
 import com.lingan.edongspeechlibrary.utils.GrammarHelper;
 import com.lingan.edongspeechlibrary.utils.WifiUtil;
 
+
+import org.litepal.util.LogUtil;
 
 import java.io.File;
 
@@ -66,8 +71,8 @@ public class EngineSpeech {
         if (mAILocalTtsEngine != null)
             mAILocalTtsEngine.destroy();
         mAILocalTtsEngine = AILocalTTSEngine.createInstance();
-        mAILocalTtsEngine.setResource("zhilingf_common_param_ce_local.v2.004.bin");
-        mAILocalTtsEngine.setDictDbName("aitts_sent_dict_v3.21.db");
+        mAILocalTtsEngine.setResource("zhilingf_common_param_ce_local.v2.006.bin");
+        mAILocalTtsEngine.setDictDbName("aitts_sent_dict_v3.24.db");
         mAILocalTtsEngine.init(context, new AILocalTTSListenerImpl(), Constant.APPKEY, Constant.SECRETKEY);
         mAILocalTtsEngine.setSpeechRate(0.85f);  // 语速设置
         mAILocalTtsEngine.setDeviceId(Util.getIMEI(context));
@@ -92,8 +97,8 @@ public class EngineSpeech {
         mAIMixASREngine = AIMixASREngine.createInstance();
         mAIMixASREngine.setResBin("ebnfr.aihome.0.3.0.bin");
         mAIMixASREngine.setNetBin(AILocalGrammarEngine.OUTPUT_NAME, true);
-        mAIMixASREngine.setVadResource("vad_aihome_v0.6.bin");
-        mAIMixASREngine.setServer("ws://s-test.api.aispeech.com:10000"); //灰度环境
+        mAIMixASREngine.setVadResource("vad_aihome_v0.7.bin");
+        mAIMixASREngine.setServer("ws://s.api.aispeech.com:1028,ws://s.api.aispeech.com:80"); //灰度环境
         // mAIMixASREngine.setServer("ws://s.api.aispeech.com:1028,ws://s.api.aispeech.com:80"); //正式产品环境
         mAIMixASREngine.setUseXbnfRec(true);
         mAIMixASREngine.setRes("aihome");
@@ -113,7 +118,7 @@ public class EngineSpeech {
         mAIMixASREngine.setCloudVadEnable(false);
 
         if (context.getExternalCacheDir() != null) {
-            mAIMixASREngine.setUploadEnable(false);//设置上传音频使能
+            // mAIMixASREngine.setUploadEnable(false);//设置上传音频使能
             File dir = new File("/sdcard/asr/");
             if (!dir.exists()) {
                 dir.mkdirs();
@@ -136,14 +141,22 @@ public class EngineSpeech {
     private void initWakeupEngine() {
         mAILocalSignalAndWakeupEngine = AILocalSignalAndWakeupEngine.getInstance();
         // 设置回声消除文件
-        mAILocalSignalAndWakeupEngine.setAecCfg("AEC_ch8-2-ch6_2ref_common_20170725_v0.8.1.bin");
+        mAILocalSignalAndWakeupEngine.setAecCfg("AEC_ch8-2-ch6_1ref_comm_20171208_v0.9.0.bin");
         //mAILocalSignalAndWakeupEngine.disableAec();
+
+        mAILocalSignalAndWakeupEngine.setRollBackTime(1200);
+        mAILocalSignalAndWakeupEngine.setWords(new String[]{
+                "ni hao xiao le"});
+        mAILocalSignalAndWakeupEngine.setThreshold(new float[]{0.24f});
+        mAILocalSignalAndWakeupEngine.setMajors(new int[]{0});
+
+
         // 设置 beamformingcfg 配置文件
-        mAILocalSignalAndWakeupEngine.setBeamformingCfg("UCA_asr_ch6-2-ch6_72mm_common_20170725_v3.0.12.bin");
+        mAILocalSignalAndWakeupEngine.setBeamformingCfg("UCA_asr_ch6-2-ch6_72mm_common_20171108_v1.0.2.bin");
         // 设置唤醒词资源名
-        mAILocalSignalAndWakeupEngine.setResBin("aihome_comm_xiaole_20160331_boundary.bin");
+        mAILocalSignalAndWakeupEngine.setResBin("wakeup_aifar_comm_20180104.bin");
         // 设置唤醒配置文件
-        mAILocalSignalAndWakeupEngine.setWakeupCfg("UCA_wakeup_ch6-2-ch6_72mm_common_20170725_v3.0.12.bin");
+        // mAILocalSignalAndWakeupEngine.setWakeupCfg("UCA_wakeup_ch6-2-ch6_72mm_common_20170725_v3.0.12.bin");
         //mAILocalSignalAndWakeupEngine.setSaveAudioFilePath("/mnt/internal_sd/");
         // 设置 自己 feed 数据
         mAILocalSignalAndWakeupEngine.setUseCustomFeed(true);
@@ -162,11 +175,12 @@ public class EngineSpeech {
         @Override
         public void onInit(int status) {
             if (status == AIConstant.OPT_SUCCESS) {
-                mAILocalSignalAndWakeupEngine.start();  // start 唤醒再启动其他引擎
-
+                mAILocalSignalAndWakeupEngine.start();  // start 唤醒
+                Log.d("edong", "唤醒初始化成功");
                 Record.feedData();
             } else {
                 // 唤醒引擎初始化失败
+                Log.d("edong", "唤醒初始化失败");
             }
 
         }
@@ -174,41 +188,55 @@ public class EngineSpeech {
         @Override
         public void onError(AIError aiError) {
             // 唤醒引擎出错
+            Log.d("edong", "唤醒引擎出错");
         }
 
         @Override
-        public void onWakeup(double confidence, String wakeupword, double angle) {
-            //"唤醒成功 confiednce:" + confidence + " wakeupword:" + wakeupword + " angle:" + angle
+        public void onWakeup(double confidence, String wakeupword) {
 
-            LedControl.wakeup(context, WifiUtil.isWifiConnected(context), (int) angle);
+            //          LedControl.wakeup(context, WifiUtil.isWifiConnected(context), (int) angle);
+            Log.d("edong", "onWakeup");
 
-            // 暂停播放 唤醒时取消当前正在 TTS / ASR
-            MediaUtil.play(context, ResultBean.PlayType.PAUSE, null, 0);
-            mAILocalTtsEngine.stop();
-            mAIMixASREngine.cancel();
-
-            // 唤醒后进行语义合成 - - ->需要进行语义理解
-            isNeedASR = true;
-            mAILocalTtsEngine.speak("我在", "1024");
 
         }
 
         @Override
         public void onReadyForSpeech() {
+            Log.d("edong", "唤醒引擎准备就绪");
             // 唤醒引擎准备就绪 onReadyForSPeech
         }
 
         @Override
-        public void onRawDataReceived(byte[] bytes) {
+        public void onRawDataReceived(byte[] bytes, int i) {
 
 
         }
 
         @Override
-        public void onResultDataReceived(byte[] bytes) {
+        public void onResultDataReceived(byte[] bytes, int size, int wakeup_type) {
 
 
         }
+
+
+        @Override
+        public void onDoaResult(int doa) {
+            Log.d("edong", "onDoaResult");
+// 暂停播放 唤醒时取消当前正在 TTS / ASR
+            MediaUtil.play(context, ResultBean.PlayType.PAUSE, null, 0);
+            mAILocalTtsEngine.stop();
+            mAIMixASREngine.cancel();
+
+
+            mAILocalTtsEngine.speak("我在", "1024");
+            // 唤醒后进行语义合成 - - ->需要进行语义理解
+            isNeedASR = true;
+
+            LedControl.wakeup(context, WifiUtil.isWifiConnected(context), (int) doa);
+
+
+        }
+
     }
 
 
@@ -218,10 +246,13 @@ public class EngineSpeech {
     public class AILocalTTSListenerImpl implements AITTSListener {
         @Override
         public void onInit(int status) {
-/*            if (status == AIConstant.OPT_SUCCESS)
+            if (status == AIConstant.OPT_SUCCESS)
                 //本地语音合成初始化成功
+                Log.i("edong", "本地语音合成初始化成功");
             else
-                //本地语音合成初始化失败*/
+                //本地语音合成初始化失败
+                Log.i("edong", "本地语音合成初始化失败");
+
         }
 
         @Override
@@ -231,13 +262,16 @@ public class EngineSpeech {
 
         @Override
         public void onReady(String s) {
-            if (!isNeedASR)
+            Log.i("edong", "onReady");
+            if (!isNeedASR) {
+                Log.i("edong", "onReady");
                 LedControl.ttsStart(context);
+            }
         }
 
         @Override
         public void onCompletion(String s) {
-
+            Log.i("edong", "onCompletion");
             // 语音合成结束，返回
             if (isNeedASR) {
                 // 语音播放的是 "我在"
@@ -279,7 +313,7 @@ public class EngineSpeech {
 
         @Override
         public void onReadyForSpeech() {
-          // ("等待用户说话...");
+            // ("等待用户说话...");
         }
 
         @Override
@@ -303,7 +337,7 @@ public class EngineSpeech {
 
         @Override
         public void onError(AIError aiError) {
-           // LogUtil.d("识别引擎出错：" + aiError.getError());
+            // LogUtil.d("识别引擎出错：" + aiError.getError());
             isNeedASR = false;
             resultBean = new ResultBean("", ResultBean.PlayType.PAUSE, null, 0);
             mAILocalTtsEngine.speak("网络好像出了点问题，最好先检查一下网络", "2048");
@@ -330,7 +364,7 @@ public class EngineSpeech {
         }
 
         @Override
-        public void onBufferReceived(byte[] bytes) {
+        public void onBufferReceived(byte[] bytes, int size) {
             //    LogUtil.d("ASR 引擎 onBufferReceived");
 
         }
@@ -373,13 +407,13 @@ public class EngineSpeech {
         mAILocalGrammarEngine.update();
     }
 
-    public void ttsSpeak(String tts){
+    public void ttsSpeak(String tts) {
 
         // 暂停播放 唤醒时取消当前正在 TTS / ASR
         MediaUtil.play(context, ResultBean.PlayType.PAUSE, null, 0);
         mAILocalTtsEngine.stop();
         mAIMixASREngine.cancel();
-        mAILocalTtsEngine.speak(tts,"1024");
+        mAILocalTtsEngine.speak(tts, "1024");
     }
 
 }

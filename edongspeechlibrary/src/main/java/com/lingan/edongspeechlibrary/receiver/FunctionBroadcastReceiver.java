@@ -70,7 +70,7 @@ public class FunctionBroadcastReceiver extends BroadcastReceiver {
             SmartConfig.dispatchState(SmartConfig.SmartConfigState.START);
 
             // 播放语音提示用户 - - - 进入联网模式
-            resList.add(0, R.raw.enter_wifi_mode);
+            resList.add(0,"enter_wifi_mode.wav");
             MediaUtil.play(context, ResultBean.PlayType.TIP, resList, 0);
 
             myTimerTask = new MyTimerTask();
@@ -85,7 +85,7 @@ public class FunctionBroadcastReceiver extends BroadcastReceiver {
 
                 // 如果当前TimerTask正在运行
                 // 播放语音提示 - - - 退出联网模式
-                resList.add(0, R.raw.exit_wifi_mode);
+                resList.add(0,"exit_wifi_mode.wav");
                 MediaUtil.play(context, ResultBean.PlayType.TIP, resList, 0);
 
                 LedControl.smartConfigFinish(context, false);
@@ -107,7 +107,7 @@ public class FunctionBroadcastReceiver extends BroadcastReceiver {
                 SmartConfig.dispatchState(SmartConfig.SmartConfigState.SUCCESS);
 
                 // 语音提示配网成功
-                resList.add(0, R.raw.wifi_connected_success);
+                resList.add(0, "wifi_connected_success.wav");
                 MediaUtil.play(context, ResultBean.PlayType.TIP, resList, 0);
 
                 LedControl.smartConfigFinish(context, true);
@@ -122,7 +122,7 @@ public class FunctionBroadcastReceiver extends BroadcastReceiver {
                 SmartConfig.dispatchState(SmartConfig.SmartConfigState.FAIL);
 
                 // 语音提示配网失败
-                resList.add(0, R.raw.wifi_connected_fail);
+                resList.add(0, "wifi_connected_fail.wav");
                 MediaUtil.play(context, ResultBean.PlayType.TIP, resList, 0);
 
                 LedControl.smartConfigFinish(context, false);

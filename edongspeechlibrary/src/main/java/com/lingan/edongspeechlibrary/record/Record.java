@@ -56,7 +56,7 @@ public class Record {
 
                     mAILocalSignalAndWakeupEngine.start();
 
-                    mAILocalSignalAndWakeupEngine.feedData(minBuffBytes);
+                    mAILocalSignalAndWakeupEngine.feedData(minBuffBytes,minBuffBytes.length);
 
 
 //                    try {

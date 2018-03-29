@@ -1,6 +1,8 @@
 package com.lingan.edongspeechlibrary.media;
 
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.media.MediaPlayer;
 import android.util.Log;
 
@@ -25,6 +27,7 @@ public class MediaUtil {
 
     private static MediaPlayer mediaPlayer;
     private static String playName = "";
+    private static String playType = "";
     private static boolean isSinglePlay = false;
     public static int singleTimes = 0;
     private static List resList;
@@ -36,6 +39,7 @@ public class MediaUtil {
         if (resList!=null) {
             MediaUtil.resList = resList;
         }
+        Log.i("edong","play");
         switch (playType) {
             case TIP:
                 // 播放提示音
@@ -43,15 +47,21 @@ public class MediaUtil {
                 break;
             case MUSIC:
                 playRemoteUrl(playType, resList, position);
+                playType = ResultBean.PlayType.MUSIC;
                 break;
             case NETFM:
             case NETFM3:
                 playRemoteUrl(playType, resList, position);
+                playType = ResultBean.PlayType.NETFM;
                 break;
             case NEWS:
                 playRemoteUrl(playType, resList, position);
+                playType = ResultBean.PlayType.NEWS;
             case PAUSE:
                 pause();
+                break;
+            case STOP:
+                stop();
                 break;
             case RESUME:
                 resume();
@@ -126,9 +136,20 @@ public class MediaUtil {
             } catch (Exception e) {
             }
         }
+        mediaPlayer = new MediaPlayer();
+        AssetManager assetManager = context.getAssets();
+        try {
+            AssetFileDescriptor fileDescriptor = assetManager.openFd((String) resList.get(0));
+            mediaPlayer.setDataSource(fileDescriptor.getFileDescriptor(),fileDescriptor.getStartOffset(),
+                    fileDescriptor.getStartOffset());
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         // 播放提示音
-        mediaPlayer = MediaPlayer.create(context, (int) resList.get(0));
-        mediaPlayer.start();
+//        mediaPlayer = MediaPlayer.create(context, (int) resList.get(0));
+//        mediaPlayer.start();
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
@@ -333,6 +354,9 @@ public class MediaUtil {
         } catch (Exception e) {
             return false;
         }
+    }
+    public static String getPlayType(){
+        return playType;
     }
 
 

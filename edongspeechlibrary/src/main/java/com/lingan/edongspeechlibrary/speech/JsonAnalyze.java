@@ -58,7 +58,7 @@ public class JsonAnalyze {
 
         Log.d("edong", "json:" + jsonString);
 
-        FileUtil.saveFile(jsonString);
+        //FileUtil.saveFile(jsonString);
 
         try {
             JSONObject jsonObject = new JSONObject(jsonString);
@@ -129,9 +129,19 @@ public class JsonAnalyze {
                             resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                             break;
                         }else if (tgt.equals("歌曲名")) {
-                            tts = "正在播放的是"+MediaUtil.getPlayingName();
-                            Log.i("edong", "tts" + tts);
-                            resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                            if (MediaUtil.getPlayingName().equals("")){
+                                tts = "当前没有播放的音乐";
+                                resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                            }else {
+                                if (MediaUtil.getPlayType().equals(ResultBean.PlayType.NETFM)) {
+                                    tts = "当前正在播放的故事是" + MediaUtil.getPlayingName();
+                                }else if (MediaUtil.getPlayType().equals(ResultBean.PlayType.NEWS)) {
+                                    tts = "当前正在播放的新闻是" + MediaUtil.getPlayingName();
+                                }else {
+                                    tts = "当前正在播放的音乐是" + MediaUtil.getPlayingName();
+                                }
+                                resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
+                            }
                             break;
                         }
                     }else if (paramObject.has("重复次数")){
@@ -185,7 +195,13 @@ public class JsonAnalyze {
                                 tts = "当前没有播放的故事";
                                 resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                             }else {
-                                tts = "当前正在播放的故事是"+MediaUtil.getPlayingName();
+                                if (MediaUtil.getPlayType().equals(ResultBean.PlayType.NETFM)) {
+                                    tts = "当前正在播放的故事是" + MediaUtil.getPlayingName();
+                                }else if (MediaUtil.getPlayType().equals(ResultBean.PlayType.NEWS)) {
+                                    tts = "当前正在播放的新闻是" + MediaUtil.getPlayingName();
+                                }else {
+                                    tts = "当前正在播放的音乐是" + MediaUtil.getPlayingName();
+                                }
                                 resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                             }
                             break;
@@ -206,6 +222,7 @@ public class JsonAnalyze {
                         } else {
                             tts = netfm3List.get(0).getRadio_name();
                             resultBean = new ResultBean(tts, ResultBean.PlayType.NETFM3, netfm3List, 0);
+                            resList = netfm3List;
                             break;
                         }
 
@@ -218,7 +235,9 @@ public class JsonAnalyze {
                     } else {
                         tts = netfmList.get(0).getTrack();
                         resultBean = new ResultBean(tts, ResultBean.PlayType.NETFM, netfmList, 0);
+                        resList = netfmList;
                     }
+
                     break;
 
                 case "news":
@@ -230,6 +249,7 @@ public class JsonAnalyze {
                     if (newsList.size() == 0)
                         resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
                     else
+                        resList = newsList;
                         resultBean = new ResultBean(tts, ResultBean.PlayType.NEWS, newsList, 0);
                     break;
 
@@ -302,7 +322,7 @@ public class JsonAnalyze {
                 if (AlarUtil.getAlarEventCount(context)==0){
                     tts = "您还没有设置日程提醒呢";
                 }else {
-                    tts = "您一共设置了" + AlarUtil.getAlarEventCount(context) + "个日程提醒，已经帮您取消了";
+                    tts = "好的，已经帮您取消了"+ AlarUtil.getAlarEventCount(context)+ "个提醒";
                     AlarUtil.removeAlar(context);
                 }
                 resultBean = new ResultBean(tts, ResultBean.PlayType.NO, null, 0);
@@ -327,6 +347,10 @@ public class JsonAnalyze {
                 } else {
                     String operation = jsonObject.getJSONObject("result").getJSONObject("sds").getString("operation");
                     switch (operation) {
+                        case "停止":
+                            tts = Constant.COMMAND_OK;
+                            resultBean = new ResultBean(tts, ResultBean.PlayType.STOP, null, Constant.musicPlayPosition);
+                            break;
                         case "暂停":
                             tts = Constant.COMMAND_OK;
                             resultBean = new ResultBean(tts, ResultBean.PlayType.PAUSE, null, Constant.musicPlayPosition);

@@ -3,6 +3,7 @@ package com.lingan.edongspeechlibrary;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.util.Log;
 
 import com.lingan.edongspeechlibrary.bean.ResultBean;
 import com.lingan.edongspeechlibrary.led.LedControl;
@@ -61,16 +62,18 @@ public class SpeechSpeaker {
                 if (wifiConnected) {
                     //  提示开机连网成功
                     LedControl.appStarted(mContext,true);
-                    resList.add(0,R.raw.wifi_connected_success);
+                    resList.add(0,"wifi_connected_success.wav");
                     MediaUtil.play(mContext, ResultBean.PlayType.TIP, resList, 0);
+                    Log.i("edong","提示开机连网成功");
                     SpeechAuth.doAuth(mContext);
                     this.cancel();
                 }
                 if (++count == 10) {
                     // 提示用户网络连接失败
-                    LedControl.appStarted(mContext,false);
-                    resList.add(0,R.raw.wifi_connected_fail);
+                    //LedControl.appStarted(mContext,false);
+                    resList.add(0,"wifi_connected_fail.wav");
                     MediaUtil.play(mContext, ResultBean.PlayType.TIP, resList, 0);
+                    Log.i("edong","提示用户网络连接失败");
                     SpeechAuth.doAuth(mContext);
                     this.cancel();
                 }

@@ -32,8 +32,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 
-    provided files('libs/AISpeech-SDK-for-Android-microphoneArray-2.0.8.jar')
+    provided files('libs/AISpeech-SDK-for-Android-microphoneArray-circle6-2.1.1.jar')
     provided files('libs/gson-2.8.2.jar')
     provided files('libs/litepal-1.6.1.jar')
-
 }

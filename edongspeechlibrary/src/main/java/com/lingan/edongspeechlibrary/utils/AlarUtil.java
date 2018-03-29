@@ -246,7 +246,7 @@ public class AlarUtil {
             if (events.size()==0){
                 return "还没有设置提醒，设置一个吧" ;
             }else {
-                info = "你一共设置了" + events.size() + "个提醒，";
+                info = "你当前设置了" + events.size() + "个提醒，";
                 for (AlarEvent event : events) {
                     info = info + event.getTimeStr() + event.getEvent() + ",";
                 }
