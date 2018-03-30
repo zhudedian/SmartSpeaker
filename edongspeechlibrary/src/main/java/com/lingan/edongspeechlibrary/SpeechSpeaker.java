@@ -70,7 +70,7 @@ public class SpeechSpeaker {
                 }
                 if (++count == 10) {
                     // 提示用户网络连接失败
-                    //LedControl.appStarted(mContext,false);
+                    LedControl.appStarted(mContext,false);
                     resList.add(0,"wifi_connected_fail.wav");
                     MediaUtil.play(mContext, ResultBean.PlayType.TIP, resList, 0);
                     Log.i("edong","提示用户网络连接失败");
